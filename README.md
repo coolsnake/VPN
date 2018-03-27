@@ -17,8 +17,6 @@ If you're on Linode, you can simply rebuild your instance with the `PPTP VPN Ins
 
 **Drew Morris**
 
-+ [Blog](http://drewsymo.com)
-
 
 
 Link: https://blog.linuxeye.cn/412.html
