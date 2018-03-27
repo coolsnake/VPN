@@ -21,7 +21,10 @@ If you're on Linode, you can simply rebuild your instance with the `PPTP VPN Ins
 
 
 
+Link: https://blog.linuxeye.cn/412.html
 
 wget http://mirrors.linuxeye.com/scripts/vpn_centos.sh
+
 chmod +x ./vpn_centos.sh
+
 ./vpn_centos.sh
