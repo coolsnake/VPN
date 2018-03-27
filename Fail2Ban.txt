@@ -1,0 +1,82 @@
+CentOS 7安装Fail2ban防御暴力破解密码（配合FirewallD）  
+
+原文链接：https://www.ifshow.com/centos-7-install-fail2ban-with-firewalld-to-defend-brute-force-password/
+
+fail2ban可以监视你的系统日志，然后匹配日志的错误信息（正则表达式匹配）执行相应的屏蔽动作（一般情况下是调用防火墙屏蔽）。比如有人在试探你的SSH、SMTP、FTP密码，只要达到你预设的次数，fail2ban就会调用防火墙屏蔽这个IP，而且可以发送e-mail通知系统管理员。
+
+1. 安装EPEL源
+
+yum -y install epel-release.noarch
+
+2. 安装支持firewalld的fail2ban
+
+yum -y install fail2ban-firewalld fail2ban-systemd
+
+3. 安装相关软件，让fail2ban可以通过postfix发送提醒邮件（可选）
+
+安装配置postfix用于发送提醒邮件请点这里
+
+yum -y install postfix whois fail2ban-sendmail
+systemctl enable postfix
+systemctl start postfix
+
+4. 设定fail2ban
+
+新建配置文件jail.local
+
+vi /etc/fail2ban/jail.local
+
+输入以下内容后保存退出
+
+[DEFAULT]
+bantime = 86400
+findtime = 300
+maxretry = 3
+sender = fail2ban@ifshow.com
+destemail = admin@ifshow.com
+action = %(action_mwl)s
+[sshd]
+enabled = true
+port = 2345
+[sshd-ddos]
+enabled = true
+port = 2345
+
+bantime是被封IP禁止访问的时间，设定值为24小时，单位是秒。
+findtime是检测时间，在此时间内超过规定的次数会激活fail2ban，单位是秒。
+maxretry是允许错误登录的最大次数，和findtime配合使用。
+sender为邮件发送者，destemail为接收通知邮箱。
+action是触发fail2ban采取的动作，action_mwl为禁IP+发通知邮件+写入日志。
+sshd区块的enabled = true开启对SSH服务的防护，port为SSH的自定义端口。
+sshd-ddos区块的enabled = true开启SSH-DDOS防护，port为SSH的自定义端口。
+
+如果装有vsftpd，在配置文件最后加上以下内容（port为vsftpd的登录和数据端口）
+
+[vsftpd]
+enabled = true
+port = 2121,2122
+
+5. 启用fail2ban并设为开机自启
+
+systemctl enable fail2ban
+systemctl start fail2ban
+
+6. fail2ban常用命令
+
+查看SSH服务监护状态，能看到当前被禁IP。
+
+fail2ban-client status sshd
+
+在SSH监护服务忽略IP列表（白名单）中添加IP 192.168.111.111
+
+fail2ban-client set sshd addignoreip 192.168.111.111
+
+在SSH监护服务忽略IP列表（白名单）中删除IP 192.168.111.111
+
+fail2ban-client set sshd delignoreip 192.168.111.111
+
+查看fail2ban日志
+
+tail /var/log/fail2ban.log
+
+
