@@ -1,0 +1,67 @@
+转自http://www.07net01.com/storage_networking/pptpvpnjiluyonghudengluheliuliangxinxi_12317_1346294607.html
+
+添加了一些自己的改动和注意事项
+
+
+自己搭一个vpn，用于自己查资料，另外也提供给朋友用，出于基本的管理需求，想记录一下大家的使用情况，于是找到了上面那篇文章。
+
+pptp的配置目录位于/etc/ppp/，该目录下的ip-up和ip-down可以用来记录登录与登出信息，这两个文件不一定存在，如果不存在的话直接创建就好。
+
+原文章把所有的登入登出记录都存在一个日志里，我这边的话更希望按照天来存储，具体做法如下：
+
+1. 建立日志目录
+mkdir /var/log/pptpdlog
+
+2. 记录登录信息
+
+在ip-up.local中写入以下代码
+#!/bin/sh  
+
+LOG_DIR="/var/log/pptpdlog"  
+curDay=`date +"%Y%m%d"`  
+logFile="${LOG_DIR}/pptpd${curDay}.log"  
+
+echo "##################################" >> $logFile  
+echo "Now User $PEERNAME is connected!!!" >> $logFile  
+echo "##################################" >> $logFile  
+echo "time: `date -d today +%F_%T`" >> $logFile  
+echo "clientIP: $6" >> $logFile  
+echo "username: $PEERNAME" >> $logFile  
+echo "device: $1" >> $logFile  
+echo "vpnIP: $4" >> $logFile  
+echo "assignIP: $5" >> $logFile
+    
+3. 记录登出信息
+
+在ip-down里写入以下代码
+#!/bin/sh  
+  
+LOG_DIR="/var/log/pptpdlog"  
+curDay=`date +"%Y%m%d"`  
+logFile="${LOG_DIR}/pptpd${curDay}.log"  
+  
+echo "#####################################" >> $logFile  
+echo "Now User $PEERNAME is disconnected!!!" >> $logFile  
+echo "#####################################" >> $logFile  
+echo "time: `date -d today +%F_%T`" >> $logFile  
+echo "clientIP: $6" >> $logFile  
+echo "username: $PEERNAME" >> $logFile  
+echo "device: $1" >> $logFile  
+echo "vpnIP: $4" >> $logFile  
+echo "assignIP: $5" >> $logFile  
+echo "connect time: $CONNECT_TIME s" >> $logFile  
+echo "bytes sent: $BYTES_SENT B" >> $logFile  
+echo "bytes rcvd: $BYTES_RCVD B" >> $logFile  
+sum_bytes=$(($BYTES_SENT+$BYTES_RCVD))  
+sum=`echo "scale=2;$sum_bytes/1024/1024"|bc`  
+echo "bytes sum: $sum MB" >> $logFile  
+ave=`echo "scale=2;$sum_bytes/1024/$CONNECT_TIME"|bc`  
+echo "average speed: $ave KB/s" >> $logFile 
+
+4. 添加执行权限
+
+写好之后务必确保ip-up和ip-down具有可执行权限，尤其是这两个文件本来不存在，自己后来再创建时，这两个文件会被视为纯文本，不会被执行，这正是原来那篇文章中所忽略的，所以记得加上ji
+
+chmod 755 /etc/ppp/ip-*  
+
+之后就可以到/var/log/pptpdlog/下按照日期查看登录信息了
